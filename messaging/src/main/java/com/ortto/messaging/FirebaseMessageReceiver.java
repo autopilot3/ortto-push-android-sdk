@@ -17,6 +17,7 @@ public class FirebaseMessageReceiver extends FirebaseMessagingService {
      */
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
+        Ortto.log().info("FirebaseMessageReceiver@onMessageReceived");
         boolean isReceived = onMessageReceived(this, remoteMessage);
 
         // If this is not an Ortto originated message, return false so another
@@ -36,10 +37,17 @@ public class FirebaseMessageReceiver extends FirebaseMessagingService {
      */
     public boolean onMessageReceived(Context context, RemoteMessage remoteMessage) {
         if (Ortto.instance() == null) {
+            Ortto.log().warning("FirebaseMessageReceiver@onMessageReceived.instance=null");
             return false;
         }
 
-        return new PushNotificationHandler(remoteMessage).handleMessage(context);
+        try {
+            return new PushNotificationHandler(remoteMessage).handleMessage(context);
+        } catch (Exception e) {
+            Ortto.log().severe("FirebaseMessageReceiver@onMessageReceived.fail error="+e.getMessage());
+
+            return false;
+        }
     }
 
     /**
