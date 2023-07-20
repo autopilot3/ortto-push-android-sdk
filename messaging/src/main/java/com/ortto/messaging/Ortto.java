@@ -11,8 +11,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
@@ -26,10 +26,13 @@ import com.ortto.messaging.data.PushTokenRepository;
 import com.ortto.messaging.identity.UserID;
 import com.ortto.messaging.retrofit.RegistrationResponse;
 import com.ortto.messaging.retrofit.TrackingClickedResponse;
+import com.ortto.messaging.widget.CaptureConfig;
+import com.ortto.messaging.widget.OrttoCapture;
 
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import retrofit2.Call;
@@ -44,7 +47,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory;
  */
 public class Ortto {
 
-    protected static Context appContext;
+    protected static Application appContext;
     protected static Ortto INSTANCE = null;
     protected static Logger logger = Logger.getLogger("ortto@sdk");
 
@@ -59,6 +62,8 @@ public class Ortto {
 
     protected Retrofit retrofit;
     public OrttoClientService client;
+
+    public OrttoCapture capture;
 
     public void init(OrttoConfig newConfig, @NonNull Application application) {
         appContext = application;
@@ -82,6 +87,12 @@ public class Ortto {
         dispatchIdentifyRequest();
     }
 
+    public void initCapture(CaptureConfig config) {
+        if (capture == null) {
+            capture = new OrttoCapture(config, appContext);
+        }
+    }
+
     public static Logger log() {
         return INSTANCE.logger;
     }
@@ -96,6 +107,10 @@ public class Ortto {
 
     public OrttoConfig getConfig() {
         return config;
+    }
+
+    public Optional<OrttoCapture> getCapture() {
+        return Optional.ofNullable(capture);
     }
 
     public static Ortto instance() {
@@ -257,11 +272,11 @@ public class Ortto {
     /**
      * Set the current session created by the Ortto tracking API
      *
-     * @param response Response received from the Registration service
+     * @param sessionId Session ID received from the Registration service or Capture API
      */
-    public void setSession(RegistrationResponse response) {
-        this.sessionId = response.sessionId;
-        preferences.put("sessionId", response.sessionId);
+    public void setSession(String sessionId) {
+        this.sessionId = sessionId;
+        preferences.put("sessionId", sessionId);
     }
 
     public void setPermission(PushPermission permission) {
@@ -316,4 +331,25 @@ public class Ortto {
     public interface OnTrackedListener {
         void onComplete(LinkUtm utm);
     }
+
+    public void showWidget(String id) throws OrttoCaptureInitException {
+        if (capture == null) {
+            throw new OrttoCaptureInitException();
+        }
+
+        capture.showWidget(id);
+    }
+
+    public void queueWidget(String id) throws OrttoCaptureInitException {
+        queueWidget(id, null);
+    }
+
+    public void queueWidget(String id, Map<String, String> metadata) throws OrttoCaptureInitException {
+        if (capture == null) {
+            throw new OrttoCaptureInitException();
+        }
+
+        capture.queueWidget(id, metadata);
+    }
 }
+

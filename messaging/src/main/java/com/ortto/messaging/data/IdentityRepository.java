@@ -113,7 +113,7 @@ public class IdentityRepository {
                  RegistrationResponse body = response.body();
 
                  if (body != null) {
-                     Ortto.instance().setSession(body);
+                     Ortto.instance().setSession(body.sessionId);
                  }
              }
 

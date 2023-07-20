@@ -1,11 +1,10 @@
 package com.ortto.messaging;
 
-import com.ortto.messaging.retrofit.IdentityRegistration;
-import com.ortto.messaging.retrofit.NotificationDeliveryResponse;
-import com.ortto.messaging.retrofit.RegistrationResponse;
-import com.ortto.messaging.retrofit.TokenRegistration;
-import com.ortto.messaging.retrofit.TrackingClickedResponse;
+import com.ortto.messaging.retrofit.*;
+import com.ortto.messaging.retrofit.WidgetsGetRequest;
+
 import java.util.Map;
+
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
@@ -28,4 +27,7 @@ public interface OrttoClientService {
 
     @GET
     Call<NotificationDeliveryResponse> trackNotificationDelivery(@Url String url);
+
+    @POST("-/widgets/get")
+    Call<WidgetsGetResponse> getWidgets(@Body WidgetsGetRequest request);
 }

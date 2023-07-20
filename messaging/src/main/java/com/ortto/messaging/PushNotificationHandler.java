@@ -71,13 +71,16 @@ public class PushNotificationHandler {
     public boolean handleMessage(Context context) {
         Ortto.log().info("PushNotificationHandler@handleMessage."+remoteMessage.getMessageId());
 
+        Map<String, String> data = remoteMessage.getData();
+        RemoteMessage.Notification notification = remoteMessage.getNotification();
+
         // Ignore non-ortto originated messages
-        if (!remoteMessage.getData().containsKey(KEY_NOTIFICATION)) {
+        if (!data.containsKey(KEY_NOTIFICATION)) {
             return false;
         }
 
-        if (remoteMessage.getData().containsKey(KEY_TRACKING_URL)) {
-            trackNotificationDelivery(remoteMessage.getData().get(KEY_TRACKING_URL));
+        if (data.containsKey(KEY_TRACKING_URL)) {
+            trackNotificationDelivery(data.get(KEY_TRACKING_URL));
         }
 
         // Extract out notification action list
@@ -85,25 +88,25 @@ public class PushNotificationHandler {
         ActionItem primaryAction = null;
 
         try {
-            Ortto.log().info("items: "+remoteMessage.getData().get(KEY_ACTIONS_LIST));
-            actionItemList = new Gson().fromJson(remoteMessage.getData().get(KEY_ACTIONS_LIST), new TypeToken<List<ActionItem>>(){}.getType());
-            primaryAction = new Gson().fromJson(remoteMessage.getData().get("primary_action"), new TypeToken<ActionItem>(){}.getType());
+            Ortto.log().info("items: "+data.get(KEY_ACTIONS_LIST));
+            actionItemList = new Gson().fromJson(data.get(KEY_ACTIONS_LIST), new TypeToken<List<ActionItem>>(){}.getType());
+            primaryAction = new Gson().fromJson(data.get("primary_action"), new TypeToken<ActionItem>(){}.getType());
         } catch (JsonSyntaxException e) {
             Ortto.log().info("PushNotificationHandler@parseActionList.fail: ."+e.getLocalizedMessage());
         }
 
         Bundle bundle = new Bundle();
-        for (Map.Entry<String, String> entry : remoteMessage.getData().entrySet()) {
+        for (Map.Entry<String, String> entry : data.entrySet()) {
             bundle.putString(entry.getKey(), entry.getValue());
         }
 
-        String title = remoteMessage.getNotification() == null
+        String title = notification == null
                 ? bundle.getString("title", "Push Notification")
-                : remoteMessage.getNotification().getTitle();
-        String body = remoteMessage.getNotification() == null
+                : notification.getTitle();
+        String body = notification == null
             ? bundle.getString("body", "")
-            : remoteMessage.getNotification().getBody();
-        String notificationId = remoteMessage.getData().get(KEY_NOTIFICATION);
+            : notification.getBody();
+        String notificationId = data.get(KEY_NOTIFICATION);
 
         // Set up action
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
@@ -147,18 +150,18 @@ public class PushNotificationHandler {
 
         // Set Tint
         try {
-            String tintColor = remoteMessage.getNotification() == null
+            String tintColor = notification == null
                     ? bundle.getString(KEY_COLOR, bundle.getString(FCM_COLOR))
-                    : remoteMessage.getNotification().getColor();
+                    : notification.getColor();
             notificationBuilder.setColor(parseTintColour(context, metadata, tintColor));
         } catch (NullPointerException e) {
             Ortto.log().warning("PushNotificationHandler@getTint.fail: "+e.getLocalizedMessage());
         }
 
         // Set Icon
-        String iconValue = remoteMessage.getNotification() == null
+        String iconValue = notification == null
                 ? null
-                : remoteMessage.getNotification().getIcon();
+                : notification.getIcon();
         int icon = (iconValue != null)
                 ? parseIcon(context, metadata, iconValue)
                 : context.getApplicationInfo().icon;
@@ -166,9 +169,9 @@ public class PushNotificationHandler {
 
         // Set Image
         try {
-            String image = remoteMessage.getNotification() == null || remoteMessage.getNotification().getImageUrl() == null
+            String image = notification == null || notification.getImageUrl() == null
                     ? bundle.getString(KEY_IMAGE)
-                    : remoteMessage.getNotification().getImageUrl().toString();
+                    : notification.getImageUrl().toString();
             addImage(image, notificationBuilder);
         } catch (Exception e) {
             // continue, but there was an error grabbing the image

@@ -9,10 +9,16 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.ortto.messaging.widget.OrttoCapture;
+
+import java.util.Optional;
+
 public class LifecycleListener implements Application.ActivityLifecycleCallbacks {
 
     @Override
     public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle bundle) {
+        Ortto.instance().getCapture().ifPresent(capture -> capture.setActivity(activity));
+
         Bundle extras = activity.getIntent().getExtras();
 
         if (extras == null || extras.isEmpty()) {
@@ -23,11 +29,8 @@ public class LifecycleListener implements Application.ActivityLifecycleCallbacks
         NotificationManager notificationManager = (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancel(messageID);
 
-        PushNotificationPayload payload = extras.getParcelable("payload");
-
-        if (payload != null) {
-            IntentPushReceiver.handleDeepLink(activity, payload);
-        }
+        DeepLinkHandler deepLinkHandler = new DeepLinkHandler(activity);
+        deepLinkHandler.handleIntent(activity.getIntent());
     }
 
     @Override
@@ -36,6 +39,7 @@ public class LifecycleListener implements Application.ActivityLifecycleCallbacks
 
     @Override
     public void onActivityResumed(@NonNull Activity activity) {
+        Ortto.instance().getCapture().ifPresent(OrttoCapture::processNextWidgetFromQueue);
     }
 
     @Override
