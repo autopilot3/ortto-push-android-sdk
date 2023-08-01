@@ -2,23 +2,55 @@ package com.ortto.messaging.widget;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class OrttoCapture {
+public class OrttoCapture implements AutoCloseable {
     private OrttoWebView webView;
     Activity activity;
     private String tag = "OrttoCapture";
     private CaptureConfig config;
     private Timer _timer;
     private WidgetQueue widgetQueue;
+    ConnectivityManager.NetworkCallback networkCallback;
+    ConnectivityManager connectivityManager;
 
     public OrttoCapture(CaptureConfig config, Application application) {
         this.config = config;
         this.widgetQueue = new WidgetQueue(application);
+
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                processNextWidgetFromQueue();
+            }
+
+            @Override
+            public void onLost(@NonNull Network network) {
+                if (_timer != null) {
+                    _timer.cancel();
+                }
+            }
+        };
+
+        NetworkRequest networkRequest = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                .build();
+
+        connectivityManager = (ConnectivityManager) application.getSystemService(Context.CONNECTIVITY_SERVICE);
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
     }
 
     public void setActivity(Activity activity) {
@@ -61,6 +93,13 @@ public class OrttoCapture {
     public void showWidget(String id) {
         widgetQueue.remove(id);
         webView.showWidget(id);
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (connectivityManager != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
     }
 }
 

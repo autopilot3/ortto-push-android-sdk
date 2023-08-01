@@ -3,12 +3,14 @@ package com.ortto.messaging.widget;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -25,10 +27,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.ortto.messaging.Ortto;
+import com.ortto.messaging.R;
 import com.ortto.messaging.retrofit.WidgetType;
 import com.ortto.messaging.retrofit.WidgetsGetRequest;
 import com.ortto.messaging.retrofit.WidgetsGetResponse;
 import com.ortto.messaging.retrofit.widget.Widget;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -102,11 +108,66 @@ class OrttoWebView extends FrameLayout {
                         ViewGroup viewGroup = (ViewGroup) self.getParent();
                         viewGroup.removeView(self);
 
-                        setSoftInputMode(SoftInputMode.ORIGINAL);
-
                         Ortto.instance().capture.onWidgetClosed(id);
                     }
                 }, 500);
+            }
+
+            @Override
+            public void onWidgetShown(String id) {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        View focused = activity.getCurrentFocus();
+                        if (focused != null) {
+                            InputMethodManager inputMethodManager = (InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                            inputMethodManager.hideSoftInputFromWindow(focused.getWindowToken(), 0);
+                        }
+
+                        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+                        // Listen for changes in the layout that indicate the keyboard is shown or hidden
+                        self.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                            @Override
+                            public void onGlobalLayout() {
+                                Rect r = new Rect();
+                                self.getWindowVisibleDisplayFrame(r);
+
+                                int screenHeight = self.getRootView().getHeight();
+
+                                // r.bottom is the position above soft keypad or device button.
+                                // If keypad is shown, the r.bottom is smaller than the screen height.
+                                int keypadHeight = screenHeight - r.bottom;
+
+                                if (keypadHeight > screenHeight * 0.15) { // assuming keyboard takes up > 15% of the screen
+                                    // Keyboard is open
+                                    layoutParams.bottomMargin = keypadHeight;
+                                } else {
+                                    // Keyboard is closed
+                                    layoutParams.bottomMargin = 0;
+                                }
+
+                                self.setLayoutParams(layoutParams);
+                            }
+                        });
+
+                        View decorView = activity.getWindow().getDecorView();
+
+                        // The decor view may not be a ViewGroup
+                        // This allows us to overlay the action and status bars of the app
+                        // Otherwise, we fall back to adding it to the activity's content view
+                        if (decorView instanceof ViewGroup) {
+                            ((ViewGroup)decorView).addView(self, layoutParams);
+                        } else {
+                            activity.addContentView(self, layoutParams);
+                        };
+                    }
+                });
+            }
+
+            @Override
+            public void onTrack(JSONObject options) {
+                Log.d(tag, "ap3c-track: " + options.toString());
             }
         });
         webView.addJavascriptInterface(webViewMessageBus, "Android");
@@ -161,18 +222,6 @@ class OrttoWebView extends FrameLayout {
                     };
                     webView.setWebViewClient(webViewClient);
                     webView.loadUrl(getPageUrl());
-
-                    View focused = activity.getCurrentFocus();
-                    if (focused != null) {
-                        InputMethodManager inputMethodManager = (InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                        inputMethodManager.hideSoftInputFromWindow(focused.getWindowToken(), 0);
-                    }
-
-                    ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-
-                    setSoftInputMode(SoftInputMode.ADJUST_RESIZE);
-
-                    activity.addContentView(frameLayout, layoutParams);
                 } catch (Exception e) {
                     // do nothing
                     Log.e(tag, "Error", e);
@@ -194,8 +243,7 @@ class OrttoWebView extends FrameLayout {
     }
 
     private Optional<String> getScreenName() {
-        // TODO: not implemented
-        return Optional.empty();
+        return Optional.ofNullable(Ortto.instance().screenName);
     }
 
     private Map<String, String> getPageContext() {

@@ -14,4 +14,13 @@ public interface WebViewMessageHandler {
     default void onTrack(JSONObject options) {
         Log.d("WebViewMessageHandler", options.toString());
     }
+
+    default void onWidgetShown(String id) {
+    }
+
+    default void onWidgetDismissed(String id) {
+    }
+
+    default void onWidgetFormSubmitted(String id) {
+    }
 }

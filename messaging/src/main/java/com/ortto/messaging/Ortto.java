@@ -65,6 +65,8 @@ public class Ortto {
 
     public OrttoCapture capture;
 
+    public String screenName = null;
+
     public void init(OrttoConfig newConfig, @NonNull Application application) {
         appContext = application;
         config = newConfig;
@@ -350,6 +352,10 @@ public class Ortto {
         }
 
         capture.queueWidget(id, metadata);
+    }
+
+    public void screen(String screenName) {
+        this.screenName = screenName;
     }
 }
 
