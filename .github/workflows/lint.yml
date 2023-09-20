@@ -9,8 +9,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with: 
-          distribution: 'oracle'
-          java-version: '8'
+          distribution: 'adopt'
+          java-version: '11'
       - uses: android-actions/setup-android@v2
       - run: ./gradlew lint
   test:
@@ -20,9 +20,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with: 
-          distribution: 'oracle'
-          java-version: '8'
+          distribution: 'adopt'
+          java-version: '11'
       - uses: android-actions/setup-android@v2
       - name: Run Tests
-        run: ./gradlew testDebugUnitTest
+        run: ./gradlew test
 
