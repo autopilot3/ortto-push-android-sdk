@@ -4,7 +4,7 @@ plugins {
 
 ext {
     PUBLISH_GROUP_ID = 'com.ortto'
-    PUBLISH_VERSION = '0.0.1'
+    PUBLISH_VERSION = '1.0.0'
     PUBLISH_ARTIFACT_ID = 'androidsdk'
 }
 
@@ -24,17 +24,19 @@ android {
 
     buildTypes {
         release {
+            buildConfigField "String", "SDK_VERSION", "\""+PUBLISH_VERSION+"\""
             minifyEnabled false
             consumerProguardFiles 'proguard-rules.pro'
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
+            buildConfigField "String", "SDK_VERSION", "\""+PUBLISH_VERSION+"\""
             debuggable true
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 }
 
@@ -49,5 +51,3 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 }
-
-apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"

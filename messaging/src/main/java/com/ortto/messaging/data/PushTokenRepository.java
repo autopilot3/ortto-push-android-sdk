@@ -1,6 +1,8 @@
 package com.ortto.messaging.data;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -58,13 +60,14 @@ public class PushTokenRepository {
         String json = (new Gson()).toJson(tokenRegistration);
         Ortto.log().info(json);
 
-        this.call = Ortto.instance().client.createToken(tokenRegistration);
+        this.call = Ortto.instance()
+                .client
+                .createToken(tokenRegistration, Ortto.instance().getTrackingQuery());
 
         this.call.enqueue(new Callback<RegistrationResponse>() {
             @Override
             public void onResponse(@NonNull Call<RegistrationResponse> call, @NonNull Response<RegistrationResponse> response) {
                 reset();
-
                 Ortto.log().info("PushTokenRepository@res.complete code="+response.code());
 
                 if (!response.isSuccessful()) {
@@ -80,6 +83,7 @@ public class PushTokenRepository {
 
             @Override
             public void onFailure(Call<RegistrationResponse> call, Throwable t) {
+                Log.d("ortto@sdk", "onFailure");
                 reset();
                 Ortto.log().warning("res.fail code="+t.getMessage());
             }

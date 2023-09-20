@@ -14,6 +14,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -28,6 +29,7 @@ import com.ortto.messaging.retrofit.NotificationDeliveryResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,6 +132,7 @@ public class PushNotificationHandler {
                 .setContentText(body)
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
+                .setChannelId(PushNotificationHandler.PUSH_ACTION)
                 .setTicker(context.getApplicationInfo().loadLabel(context.getPackageManager()).toString())
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body));
 
@@ -161,7 +164,7 @@ public class PushNotificationHandler {
                 : remoteMessage.getNotification().getIcon();
         int icon = (iconValue != null)
                 ? parseIcon(context, metadata, iconValue)
-                : context.getApplicationInfo().icon;
+                : R.drawable.ic_notification;
         notificationBuilder.setSmallIcon(icon);
 
         // Set Image
@@ -186,7 +189,9 @@ public class PushNotificationHandler {
                     notificationBuilder.addAction(action);
                 }
             }
-        } else if (primaryAction != null) {
+        }
+
+        if (primaryAction != null) {
             // primary_action = json of (action, url)
             // Set default intent because the action list is empty
             PendingIntent intent = this.createIntent(context, payload, primaryAction.link, messageID, -1);
@@ -202,14 +207,15 @@ public class PushNotificationHandler {
     }
 
     private void trackNotificationDelivery(String url) {
-
-        Ortto.log().info("trackNotificationDelivery: "+url);
-
         if (url == null || url.isEmpty()) {
             return;
         }
 
-        Call<NotificationDeliveryResponse> call = Ortto.instance().client.trackNotificationDelivery(url);
+        Call<NotificationDeliveryResponse> call = Ortto.instance()
+                .client
+                .trackNotificationDelivery(url, Ortto.instance().getTrackingQuery());
+
+        Ortto.log().info("PushNotificationHandler@trackNotificationDelivery url="+call.request().url());
 
         call.enqueue(new Callback<NotificationDeliveryResponse>() {
             @Override
