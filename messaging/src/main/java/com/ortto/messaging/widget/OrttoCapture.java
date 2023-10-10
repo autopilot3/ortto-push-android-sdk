@@ -11,6 +11,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.ortto.messaging.Ortto;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;

@@ -10,6 +10,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -66,6 +67,11 @@ public class Ortto {
     public OrttoCapture capture;
 
     public String screenName = null;
+
+    public void init(OrttoConfig newConfig, @NonNull Application application, Logger logger) {
+        setLogger(logger);
+        init(newConfig, application);
+    }
 
     public void init(OrttoConfig newConfig, @NonNull Application application) {
         appContext = application;
@@ -146,18 +152,6 @@ public class Ortto {
     }
 
     /**
-     * Retrieve the name of the Android application running the Ortto SDK
-     *
-     * @return string
-     */
-    public static String getApplicationName() {
-        ApplicationInfo applicationInfo = appContext.getApplicationInfo();
-        int stringId = applicationInfo.labelRes;
-
-        return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : appContext.getString(stringId);
-    }
-
-    /**
      * Has the application registered a deeplink interception callback?
      *
      * @return bool
@@ -199,6 +193,7 @@ public class Ortto {
      */
     public void requestPermissions(Activity activity, PermissionUtil.PermissionAskListener listener) {
         if (hasUserGrantedPushPermissions()) {
+            listener.onPermissionPreviouslyGranted();
             return;
         }
 
@@ -266,6 +261,8 @@ public class Ortto {
                     public void onComplete(@NonNull Task<String> task) {
                         if (task.isSuccessful()) {
                             tokenRepository.sendToServer(task.getResult());
+                        } else {
+                            log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail");
                         }
                     }
                 });
@@ -286,13 +283,50 @@ public class Ortto {
         preferences.setPermission(permission);
     }
 
+    public Map<String, String> getTrackingQuery() {
+        HashMap<String, String> query = new HashMap<>();
+        query.put("an", appContext.getPackageName()); // App Name
+        query.put("av", getApplicationVersion()); // App Version
+        query.put("sv", getSdkVersion()); // SDK Version
+        query.put("os", "android"); // OS Name
+        query.put("ov", Build.VERSION.RELEASE); // OS Version
+        query.put("dc", Build.MODEL); // Device Name
+
+        return query;
+    }
+
+
+    /**
+     * Retrieve the name of the Android application running the Ortto SDK
+     *
+     * @return string
+     */
+    public static String getApplicationName() {
+        ApplicationInfo applicationInfo = appContext.getApplicationInfo();
+        int stringId = applicationInfo.labelRes;
+
+        return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : appContext.getString(stringId);
+    }
+
+    protected static String getSdkVersion() {
+        return BuildConfig.SDK_VERSION;
+    }
+
+    protected static String getApplicationVersion() {
+        try{
+            return appContext.getPackageManager()
+                    .getPackageInfo(appContext.getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
     public void trackLinkClick(String link, OnTrackedListener listener) {
 
         Uri uri = Uri.parse(link);
         String trackingUrl = uri.getQueryParameter("tracking_url");
         String decodedString;
-
-        Ortto.log().info("trackingUrl: "+trackingUrl);
 
         try {
             byte[] decodedBytes = Base64.getDecoder().decode(trackingUrl);

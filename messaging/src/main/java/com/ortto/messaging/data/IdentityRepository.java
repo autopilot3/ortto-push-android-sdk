@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.google.gson.Gson;
+import com.ortto.messaging.BuildConfig;
 import com.ortto.messaging.Ortto;
 import com.ortto.messaging.identity.UserID;
 import com.ortto.messaging.retrofit.IdentityRegistration;
@@ -98,7 +99,9 @@ public class IdentityRepository {
         String json = (new Gson()).toJson(identityRegistration);
         Ortto.log().info(json);
 
-        this.call = Ortto.instance().client.createIdentity(identityRegistration);
+        this.call = Ortto.instance()
+                .client
+                .createIdentity(identityRegistration, Ortto.instance().getTrackingQuery());
 
         this.call.enqueue(new Callback<RegistrationResponse>() {
              @Override
