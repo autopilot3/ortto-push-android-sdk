@@ -28,6 +28,8 @@ GPG information https://github.com/sbt/sbt-ci-release#gpg
 
 Will publish to this folder https://repo1.maven.org/maven2/com/ortto/androidsdk/
 
+1. Update messaging module build.gradle `PUBLISH_VERSION` with latest version number you wish to be published
+2. Run `./gradlew messaging:publishReleasePublicationToSonatypeRepository`
 
 ## Using
 
