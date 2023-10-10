@@ -1,3 +1,5 @@
+apply plugin: 'io.github.gradle-nexus.publish-plugin'
+
 buildscript {
     repositories {
         maven { url "https://plugins.gradle.org/m2/" }
@@ -5,16 +7,12 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:7.2.2"
+        classpath "com.android.tools.build:gradle:7.3.1"
         classpath "io.github.gradle-nexus:publish-plugin:1.1.0"
     }
 }
 
-plugins {
-    id 'com.android.library' version '7.3.1' apply false
-}
 
 if (project == rootProject) {
-    apply plugin: 'io.github.gradle-nexus.publish-plugin'
     apply from: "${rootDir}/scripts/publish-root.gradle"
 }

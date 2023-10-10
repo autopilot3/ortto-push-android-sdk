@@ -10,6 +10,7 @@ ext {
 
 android {
     compileSdkVersion 33
+    namespace "com.ortto.messaging"
 
     defaultConfig {
         minSdk 26
@@ -56,6 +57,4 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 }
 
-if (project == rootProject) {
-    apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
-}
+apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
