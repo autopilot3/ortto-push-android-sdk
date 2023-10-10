@@ -15,6 +15,16 @@ OrttoConfig config = new OrttoConfig(
 
 // Start the Ortto service
 Ortto.instance().init(config, app);
+
+// Configure Capture
+import com.ortto.messaging.widget.CaptureConfig;
+
+// in App@onCreate
+Ortto.instance().initCapture(new CaptureConfig(
+    "<dataSourceKey>",
+    "<captureJsURL>",
+    "<apiHost>"
+));
 ```
 
 
@@ -30,6 +40,8 @@ Will publish to this folder https://repo1.maven.org/maven2/com/ortto/androidsdk/
 
 1. Update messaging module build.gradle `PUBLISH_VERSION` with latest version number you wish to be published
 2. Run `./gradlew messaging:publishReleasePublicationToSonatypeRepository`
+
+./gradlew publishAllPublicationsToSonatypeRepository closeAndReleaseSonatypeStagingRepository
 
 ## Using
 
