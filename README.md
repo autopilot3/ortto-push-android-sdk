@@ -9,21 +9,21 @@ FirebaseMessaging.getInstance().setAutoInitEnabled(true);
 
 // Create an Ortto SDK config object
 OrttoConfig config = new OrttoConfig(
-    "<DATASOURCE_ID>",
-    "<ENDPOINT>"
+    "<APPLICATION_KEY>",
+    "<API_ENDPOINT>"
 );
 
 // Start the Ortto service
 Ortto.instance().init(config, app);
 
-// Configure Capture
+// Configure Android in-app notifications
 import com.ortto.messaging.widget.CaptureConfig;
 
 // in App@onCreate
 Ortto.instance().initCapture(new CaptureConfig(
-    "<dataSourceKey>",
-    "<captureJsURL>",
-    "<apiHost>"
+    "<DATASOURCE_ID>",
+    "<CAPTURE_JS_URL>",
+    "<API_ENDPOINT>"
 ));
 ```
 

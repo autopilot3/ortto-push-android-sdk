@@ -51,7 +51,6 @@ public class Ortto {
     protected static Application appContext;
     protected static Ortto INSTANCE = null;
     protected static Logger logger = Logger.getLogger("ortto@sdk");
-
     protected OrttoConfig config;
     protected CustomDeeplinkCallback deeplinkCallback;
     protected IdentityRepository preferences;
