@@ -77,7 +77,7 @@ public class PushTokenRepository {
                 RegistrationResponse body = response.body();
 
                 if (body != null) {
-                    Ortto.instance().setSession(body);
+                    Ortto.instance().setSession(body.sessionId);
                 }
             }
 

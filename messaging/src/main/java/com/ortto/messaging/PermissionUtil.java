@@ -56,5 +56,11 @@ public class PermissionUtil {
          * Callback on permission granted
          * */
         void onPermissionGranted();
+
+        /**
+         * Callback on permission previously granted
+         */
+        default void onPermissionPreviouslyGranted() {
+        }
     }
 }

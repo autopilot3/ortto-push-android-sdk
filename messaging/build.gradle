@@ -4,21 +4,19 @@ plugins {
 
 ext {
     PUBLISH_GROUP_ID = 'com.ortto'
-    PUBLISH_VERSION = '1.0.0'
+    PUBLISH_VERSION = '1.5.0'
     PUBLISH_ARTIFACT_ID = 'androidsdk'
 }
 
 android {
-    namespace 'com.ortto.messaging'
     compileSdkVersion 33
+    namespace "com.ortto.messaging"
 
     defaultConfig {
         minSdk 26
-        minSdkVersion 26
         targetSdk 33
         versionCode 3
         versionName PUBLISH_VERSION
-        compileSdkVersion 33
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -38,6 +36,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -47,7 +50,11 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-scalars:2.9.0'
     implementation platform('com.google.firebase:firebase-bom:31.0.2')
     implementation 'com.google.firebase:firebase-messaging'
+    implementation 'androidx.webkit:webkit:1.4.0'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation "org.robolectric:robolectric:4.9"
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 }
+
+apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
