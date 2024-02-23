@@ -41,7 +41,8 @@ Will publish to this folder https://repo1.maven.org/maven2/com/ortto/androidsdk/
 Log into Nexus Repository Manager https://s01.oss.sonatype.org/#welcome 
 
 1. Update messaging module build.gradle `PUBLISH_VERSION` with latest version number you wish to be published
-2. Run `./gradlew publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository`
+2. Run `./gradlew publishReleasePublicationToSonatypeRepository --max-workers 1`
+3. Run `./gradlew closeAndReleaseSonatypeStagingRepository`
 
 ## Using
 

@@ -7,6 +7,7 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,15 +75,23 @@ public class DeepLinkHandler {
     }
 
     public static Optional<String> getWidgetIdFromFragment(Uri uri) {
-        if (uri != null) {
-            Pattern pattern = Pattern.compile("widget_id=(?<widgetId>[a-z0-9]+)", Pattern.CASE_INSENSITIVE);
-            Matcher matcher = pattern.matcher(uri.getFragment());
+
+        if (uri == null) {
+            return Optional.empty();
+        }
+
+        Pattern pattern = Pattern.compile("widget_id=(?<widgetId>[a-z0-9]+)", Pattern.CASE_INSENSITIVE);
+
+        try {
+            Matcher matcher = pattern.matcher(Objects.requireNonNull(uri.getFragment()));
 
             if (matcher.find()) {
                 String widgetId = matcher.group("widgetId");
 
-                return Optional.of(widgetId);
+                return Optional.of(Objects.requireNonNull(widgetId));
             }
+        } catch (NullPointerException e) {
+            return Optional.empty();
         }
 
         return Optional.empty();
