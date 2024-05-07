@@ -12,7 +12,6 @@ buildscript {
     }
 }
 
-
 if (project == rootProject) {
     apply from: "${rootDir}/scripts/publish-root.gradle"
 }
