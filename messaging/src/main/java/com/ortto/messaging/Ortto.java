@@ -10,10 +10,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
@@ -25,7 +23,6 @@ import com.ortto.messaging.data.IdentityRepository;
 import com.ortto.messaging.data.PushPermission;
 import com.ortto.messaging.data.PushTokenRepository;
 import com.ortto.messaging.identity.UserID;
-import com.ortto.messaging.retrofit.RegistrationResponse;
 import com.ortto.messaging.retrofit.TrackingClickedResponse;
 import com.ortto.messaging.widget.CaptureConfig;
 import com.ortto.messaging.widget.OrttoCapture;
@@ -34,6 +31,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 import retrofit2.Call;
@@ -53,7 +51,7 @@ public class Ortto {
     protected static Logger logger = Logger.getLogger("ortto@sdk");
     protected OrttoConfig config;
     protected CustomDeeplinkCallback deeplinkCallback;
-    protected IdentityRepository preferences;
+    protected IdentityRepository identityRepository;
     protected PushTokenRepository tokenRepository;
 
     public UserID identity = null;
@@ -75,11 +73,11 @@ public class Ortto {
     public void init(OrttoConfig newConfig, @NonNull Application application) {
         appContext = application;
         config = newConfig;
-        preferences = new IdentityRepository(appContext);
+        identityRepository = new IdentityRepository(appContext);
         tokenRepository = new PushTokenRepository(appContext);
-        sessionId = preferences.sessionId;
-        identity = preferences.identifier;
-        permission = preferences.permission;
+        sessionId = identityRepository.sessionId;
+        identity = identityRepository.identifier;
+        permission = identityRepository.permission;
         retrofit = new Retrofit.Builder()
                 .baseUrl(getConfig().endpoint)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -234,8 +232,37 @@ public class Ortto {
      * Delete all saved identity data
      */
     public void clearData() {
-        preferences.clearAll();
+        identityRepository.clearAll();
     }
+
+    public void clearIdentity(Runnable callback) {
+        CompletableFuture.runAsync(identityRepository::clearAll)
+                .thenComposeAsync(v -> getFirebaseToken())
+                .thenComposeAsync(tokenRepository::unsubscribe)
+                .thenRun(callback);
+    }
+
+    public CompletableFuture<String> getFirebaseToken() {
+        CompletableFuture<String> firebaseTokenFuture = new CompletableFuture<>();
+        FirebaseMessaging.getInstance()
+                .getToken()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        firebaseTokenFuture.complete(task.getResult());
+                    } else {
+                        log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail");
+                        firebaseTokenFuture.completeExceptionally(new Exception("Failed to get Firebase token"));
+                    }
+                });
+        return firebaseTokenFuture;
+    }
+
+    public CompletableFuture<Void> clearIdentity() {
+        return CompletableFuture.runAsync(identityRepository::clearAll)
+                .thenComposeAsync(v -> getFirebaseToken())
+                .thenComposeAsync(tokenRepository::unsubscribe);
+    }
+
 
     /**
      * Set the current user
@@ -243,28 +270,22 @@ public class Ortto {
      */
     public void identify(UserID identifier) {
         this.identity = identifier;
-        preferences.setIdentifier(identifier);
+        identityRepository.setIdentifier(identifier);
 
         dispatchIdentifyRequest();
     }
 
     public void dispatchIdentifyRequest() {
-        preferences.sendIdentityToServer(this.identity, this.sessionId);
+        identityRepository.sendIdentityToServer(this.identity, this.sessionId);
     }
 
     public void dispatchPushRequest() {
-        FirebaseMessaging.getInstance()
-                .getToken()
-                .addOnCompleteListener(new OnCompleteListener<String>() {
-                    @Override
-                    public void onComplete(@NonNull Task<String> task) {
-                        if (task.isSuccessful()) {
-                            tokenRepository.sendToServer(task.getResult());
-                        } else {
-                            log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail");
-                        }
-                    }
-                });
+        getFirebaseToken()
+            .thenAcceptAsync(token -> {
+                if (token != null) {
+                    tokenRepository.sendToServer(token);
+                }
+            }, throwable -> log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail"));
     }
 
     /**
@@ -274,12 +295,12 @@ public class Ortto {
      */
     public void setSession(String sessionId) {
         this.sessionId = sessionId;
-        preferences.put("sessionId", sessionId);
+        identityRepository.put("sessionId", sessionId);
     }
 
     public void setPermission(PushPermission permission) {
         this.permission = permission;
-        preferences.setPermission(permission);
+        identityRepository.setPermission(permission);
     }
 
     public Map<String, String> getTrackingQuery() {

@@ -22,7 +22,7 @@ public class IdentityRepository {
 
     public String sessionId;
 
-    public UserID identifier;
+    public UserID identifier = null;
 
     public PushPermission permission = PushPermission.Automatic;
 
@@ -60,7 +60,11 @@ public class IdentityRepository {
 
     public void setIdentifier(UserID identifier) {
         this.identifier = identifier;
-        this.put("identity", identifier.toJson());
+        if (identifier != null) {
+            this.put("identity", identifier.toJson());
+        } else {
+            sharedPreferences.edit().remove("identity").apply();
+        }
     }
 
     public String get(String key) {
@@ -69,6 +73,9 @@ public class IdentityRepository {
 
     public void clearAll() {
         sharedPreferences.edit().clear().apply();
+        this.setIdentifier(null);
+        Ortto.log().info("IdentityRepository@clearAll: identifier set to null");
+
     }
 
     public void sendIdentityToServer(UserID identity, String sessionId) {

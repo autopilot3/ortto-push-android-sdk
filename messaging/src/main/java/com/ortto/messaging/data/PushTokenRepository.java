@@ -13,6 +13,8 @@ import com.ortto.messaging.Ortto;
 import com.ortto.messaging.retrofit.TokenRegistration;
 import com.ortto.messaging.retrofit.RegistrationResponse;
 
+import java.util.concurrent.CompletableFuture;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -110,5 +112,53 @@ public class PushTokenRepository {
 
     private boolean canConnectToGoogleServices() {
         return GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this.context) == ConnectionResult.SUCCESS;
+    }
+
+    public CompletableFuture<Void> unsubscribe(String token) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+
+        // Generate the registration request
+        TokenRegistration tokenRegistration = new TokenRegistration(
+                Ortto.instance().getConfig().appKey,
+                Ortto.instance().sessionId,
+                token,
+                false,
+                Ortto.instance().getConfig().shouldSkipNonExistingContacts
+        );
+        String json = (new Gson()).toJson(tokenRegistration);
+        Ortto.log().info(json);
+
+        this.call = Ortto.instance()
+                .client
+                .createToken(tokenRegistration, Ortto.instance().getTrackingQuery());
+
+        this.call.enqueue(new Callback<RegistrationResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<RegistrationResponse> call, @NonNull Response<RegistrationResponse> response) {
+                reset();
+                Ortto.log().info("PushTokenRepository@res.complete code="+response.code());
+
+                if (!response.isSuccessful()) {
+                    future.completeExceptionally(new Exception("Unsuccessful response"));
+                    return;
+                }
+
+                RegistrationResponse body = response.body();
+
+                Ortto.instance().setSession(null);
+
+                future.complete(null);
+            }
+
+            @Override
+            public void onFailure(Call<RegistrationResponse> call, Throwable t) {
+                Log.d("ortto@sdk", "onFailure");
+                reset();
+                Ortto.log().warning("res.fail code="+t.getMessage());
+                future.completeExceptionally(t);
+            }
+        });
+
+        return future;
     }
 }
