@@ -2,7 +2,7 @@ plugins {
     id 'com.android.library'
 }
 
-def publishVersion = System.getenv("PUBLISH_VERSION")
+def publishVersion = System.getenv("VERSION_NAME")
 if (publishVersion == null || publishVersion.isEmpty()) {
     publishVersion = "0.0.0"
 }
