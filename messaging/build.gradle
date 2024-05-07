@@ -58,4 +58,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:4.2.0'
 }
 
- apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
+if (project == rootProject) {
+    apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
+}
+
