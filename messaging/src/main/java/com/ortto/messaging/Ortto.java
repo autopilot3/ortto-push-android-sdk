@@ -23,6 +23,7 @@ import com.ortto.messaging.data.IdentityRepository;
 import com.ortto.messaging.data.PushPermission;
 import com.ortto.messaging.data.PushTokenRepository;
 import com.ortto.messaging.identity.UserID;
+import com.ortto.messaging.retrofit.RegistrationResponse;
 import com.ortto.messaging.retrofit.TrackingClickedResponse;
 import com.ortto.messaging.widget.CaptureConfig;
 import com.ortto.messaging.widget.OrttoCapture;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import retrofit2.Call;
@@ -235,11 +237,11 @@ public class Ortto {
         identityRepository.clearAll();
     }
 
-    public void clearIdentity(Runnable callback) {
+    public void clearIdentity(Consumer<RegistrationResponse> callback) {
         CompletableFuture.runAsync(identityRepository::clearAll)
                 .thenComposeAsync(v -> getFirebaseToken())
                 .thenComposeAsync(tokenRepository::unsubscribe)
-                .thenRun(callback);
+                .thenAccept(callback);
     }
 
     public CompletableFuture<String> getFirebaseToken() {
@@ -256,13 +258,6 @@ public class Ortto {
                 });
         return firebaseTokenFuture;
     }
-
-    public CompletableFuture<Void> clearIdentity() {
-        return CompletableFuture.runAsync(identityRepository::clearAll)
-                .thenComposeAsync(v -> getFirebaseToken())
-                .thenComposeAsync(tokenRepository::unsubscribe);
-    }
-
 
     /**
      * Set the current user

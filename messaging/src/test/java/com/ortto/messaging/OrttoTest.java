@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 
 import android.app.Application;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.ortto.messaging.data.IdentityRepository;
 import com.ortto.messaging.identity.UserID;
@@ -46,7 +47,10 @@ public class OrttoTest {
         ortto.clearData();
         assertNull(identityRepository.identifier);
 
-        ortto.clearIdentity();
+        ortto.clearIdentity(response -> {
+            Log.d("test", "Response: " + response.sessionId);
+            assertNull(identityRepository.identifier);
+        });
         assertNull(ortto.identity);
     }
 }

@@ -114,8 +114,8 @@ public class PushTokenRepository {
         return GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this.context) == ConnectionResult.SUCCESS;
     }
 
-    public CompletableFuture<Void> unsubscribe(String token) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
+    public CompletableFuture<RegistrationResponse> unsubscribe(String token) {
+        CompletableFuture<RegistrationResponse> future = new CompletableFuture<>();
 
         // Generate the registration request
         TokenRegistration tokenRegistration = new TokenRegistration(
@@ -126,7 +126,6 @@ public class PushTokenRepository {
                 Ortto.instance().getConfig().shouldSkipNonExistingContacts
         );
         String json = (new Gson()).toJson(tokenRegistration);
-        Ortto.log().info(json);
 
         this.call = Ortto.instance()
                 .client
@@ -143,11 +142,9 @@ public class PushTokenRepository {
                     return;
                 }
 
-                RegistrationResponse body = response.body();
-
                 Ortto.instance().setSession(null);
 
-                future.complete(null);
+                future.complete(response.body());
             }
 
             @Override
