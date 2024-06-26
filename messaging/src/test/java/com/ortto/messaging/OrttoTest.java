@@ -2,19 +2,12 @@ package com.ortto.messaging;
 
 import org.mockito.Mockito;
 import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.assertNull;
 
 import android.app.Application;
 import android.content.SharedPreferences;
-import android.util.Log;
 
-import com.ortto.messaging.data.IdentityRepository;
-import com.ortto.messaging.identity.UserID;
-
-public class OrttoTest {
-    private Ortto ortto;
-    private IdentityRepository identityRepository;
+abstract public class OrttoTest {
+    protected Ortto ortto;
 
     @Before
     public void setUp() {
@@ -33,24 +26,5 @@ public class OrttoTest {
         OrttoConfig config = new OrttoConfig("abc123", "http://localhost", false);
         Ortto.instance().init(config, mockApplicationContext);
         ortto = Ortto.instance();
-        identityRepository = new IdentityRepository(ortto.appContext);
-        ortto.identityRepository = identityRepository;
-    }
-
-    @Test
-    public void testClearData() {
-        // Set some data
-        UserID testUser = new UserID();
-        testUser.contactId = "i-am-a-contact";
-        identityRepository.setIdentifier(testUser);
-
-        ortto.clearData();
-        assertNull(identityRepository.identifier);
-
-        ortto.clearIdentity(response -> {
-            Log.d("test", "Response: " + response.sessionId);
-            assertNull(identityRepository.identifier);
-        });
-        assertNull(ortto.identity);
     }
 }

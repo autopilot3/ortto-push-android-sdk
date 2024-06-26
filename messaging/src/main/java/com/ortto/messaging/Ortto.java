@@ -337,6 +337,15 @@ public class Ortto {
         }
     }
 
+    private String base64UrlDecode(String input) {
+        String base64 = input.replace('-', '+').replace('_', '/');
+        switch (base64.length() % 4) {
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
+        }
+        return base64;
+    }
+
     public void trackLinkClick(String link, OnTrackedListener listener) {
 
         Uri uri = Uri.parse(link);
@@ -344,9 +353,10 @@ public class Ortto {
         String decodedString;
 
         try {
-            byte[] decodedBytes = Base64.getDecoder().decode(trackingUrl);
-             decodedString = new String(decodedBytes);
+            byte[] decodedBytes = Base64.getDecoder().decode(base64UrlDecode(trackingUrl));
+            decodedString = new String(decodedBytes);
         } catch (RuntimeException e) {
+            Ortto.log().warning("Ortto@trackLinkClick.error decodingError=" + e.getMessage());
             decodedString = trackingUrl;
         }
 
