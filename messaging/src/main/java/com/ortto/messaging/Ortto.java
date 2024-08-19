@@ -252,7 +252,7 @@ public class Ortto {
                     if (task.isSuccessful()) {
                         firebaseTokenFuture.complete(task.getResult());
                     } else {
-                        log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail");
+                        log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail!!");
                         firebaseTokenFuture.completeExceptionally(new Exception("Failed to get Firebase token"));
                     }
                 });
@@ -280,7 +280,11 @@ public class Ortto {
                 if (token != null) {
                     tokenRepository.sendToServer(token);
                 }
-            }, throwable -> log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail"));
+            })
+            .exceptionally(throwable -> {
+                log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail message="+throwable.getMessage());
+                return null;
+            });
     }
 
     /**

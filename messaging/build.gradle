@@ -37,14 +37,20 @@ android {
             debuggable true
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+
     testOptions {
         unitTests {
             includeAndroidResources = true
         }
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 }
 
