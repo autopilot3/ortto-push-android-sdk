@@ -1,4 +1,3 @@
-apply plugin: 'io.github.gradle-nexus.publish-plugin'
 
 buildscript {
     repositories {
