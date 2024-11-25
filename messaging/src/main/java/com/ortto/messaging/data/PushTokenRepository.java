@@ -13,6 +13,7 @@ import com.ortto.messaging.Ortto;
 import com.ortto.messaging.retrofit.TokenRegistration;
 import com.ortto.messaging.retrofit.RegistrationResponse;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import retrofit2.Call;
@@ -36,31 +37,27 @@ public class PushTokenRepository {
      * Forward the new FCM token to Ortto's API
      * @param token FCM Token
      */
-    public void sendToServer(String token) {
+    public CompletableFuture<RegistrationResponse> sendToServer(String token) {
+        CompletableFuture<RegistrationResponse> future = new CompletableFuture<>();
+        
         if (this.call != null && this.call.isExecuted()) {
             Ortto.log().warning("PushTokenRepository@sendToServer.alreadyRequesting");
-
-            return;
+            future.complete(null);
+            return future;
         }
 
-        // Verify we can connect to the internet
         if (!canConnectToGoogleServices()) {
             Ortto.log().warning("PushTokenRepository@sendToServer.googleServicesConnection.fail");
-
-            return;
+            future.complete(null);
+            return future;
         }
 
-        // Generate the registration request
         TokenRegistration tokenRegistration = new TokenRegistration(
                 Ortto.instance().getConfig().appKey,
                 Ortto.instance().sessionId,
                 token,
-                isPermissionGranted(),
-                Ortto.instance().getConfig().shouldSkipNonExistingContacts
+                isPermissionGranted()
         );
-
-        String json = (new Gson()).toJson(tokenRegistration);
-        Ortto.log().info(json);
 
         this.call = Ortto.instance()
                 .client
@@ -70,26 +67,26 @@ public class PushTokenRepository {
             @Override
             public void onResponse(@NonNull Call<RegistrationResponse> call, @NonNull Response<RegistrationResponse> response) {
                 reset();
-                Ortto.log().info("PushTokenRepository@res.complete code="+response.code());
-
                 if (!response.isSuccessful()) {
+                    future.completeExceptionally(new Exception("Request failed with code: " + response.code()));
                     return;
                 }
-
                 RegistrationResponse body = response.body();
-
                 if (body != null) {
                     Ortto.instance().setSession(body.sessionId);
                 }
+                future.complete(body);
             }
 
             @Override
             public void onFailure(Call<RegistrationResponse> call, Throwable t) {
-                Log.d("ortto@sdk", "onFailure");
                 reset();
-                Ortto.log().warning("res.fail code="+t.getMessage());
+                Ortto.log().warning("res.fail code=" + t.getMessage());
+                future.completeExceptionally(t);
             }
         });
+
+        return future;
     }
 
     protected void reset() {
@@ -107,7 +104,6 @@ public class PushTokenRepository {
             default:
                 return Ortto.instance().hasUserGrantedPushPermissions();
         }
-
     }
 
     private boolean canConnectToGoogleServices() {
@@ -122,10 +118,8 @@ public class PushTokenRepository {
                 Ortto.instance().getConfig().appKey,
                 Ortto.instance().sessionId,
                 token,
-                false,
-                Ortto.instance().getConfig().shouldSkipNonExistingContacts
+                false
         );
-        String json = (new Gson()).toJson(tokenRegistration);
 
         this.call = Ortto.instance()
                 .client

@@ -20,13 +20,13 @@ import java.util.TimerTask;
 
 public class OrttoCapture implements AutoCloseable {
     private OrttoWebView webView;
-    Activity activity;
+    protected Activity activity;
     private String tag = "OrttoCapture";
     private CaptureConfig config;
     private Timer _timer;
     private WidgetQueue widgetQueue;
-    ConnectivityManager.NetworkCallback networkCallback;
-    ConnectivityManager connectivityManager;
+    protected ConnectivityManager.NetworkCallback networkCallback;
+    protected ConnectivityManager connectivityManager;
 
     public OrttoCapture(CaptureConfig config, Application application) {
         this.config = config;

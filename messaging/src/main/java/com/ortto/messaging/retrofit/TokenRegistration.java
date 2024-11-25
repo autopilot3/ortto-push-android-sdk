@@ -8,8 +8,7 @@ public class TokenRegistration {
         String dataSourceInstanceIDHash,
         String session,
         String deviceToken,
-        Boolean permission,
-        Boolean skipNonExistingContacts
+        Boolean permission
     ) {
         this.dataSourceInstanceIDHash = dataSourceInstanceIDHash;
         this.session = session;

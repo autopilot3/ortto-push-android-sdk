@@ -1,16 +1,25 @@
 package com.ortto.messaging;
 
-public class OrttoConfig {
+public class OrttoConfig
+{
     public String appKey;
     public String endpoint;
-    public Boolean shouldSkipNonExistingContacts;
-    public Boolean allowAnonUsers;
+    public boolean shouldSkipNonExistingContacts = false;
 
     public OrttoConfig(String appKey, String endpoint, Boolean shouldSkipNonExistingContacts) {
-        this(appKey, endpoint, shouldSkipNonExistingContacts, false);
+        this(appKey, endpoint);
+        this.shouldSkipNonExistingContacts = shouldSkipNonExistingContacts;
     }
 
+    /**
+     * @deprecated Use {@link OrttoConfig#OrttoConfig(String, String, Boolean)} instead
+     */
     public OrttoConfig(String appKey, String endpoint, Boolean shouldSkipNonExistingContacts, Boolean allowAnonUsers) {
+        this(appKey, endpoint, shouldSkipNonExistingContacts);
+        Ortto.log().warning("OrttoConfig: Deprecated constructor used. Use OrttoConfig(String, String, Boolean) instead");
+    }
+
+    public OrttoConfig(String appKey, String endpoint) {
         if (appKey != null) {
             this.appKey = appKey;
         }
@@ -18,12 +27,5 @@ public class OrttoConfig {
         if (endpoint != null) {
             this.endpoint = endpoint;
         }
-
-        this.shouldSkipNonExistingContacts = shouldSkipNonExistingContacts;
-        this.allowAnonUsers = allowAnonUsers;
-    }
-
-    public OrttoConfig(String appKey, String endpoint) {
-        this(appKey, endpoint, false);
     }
 }

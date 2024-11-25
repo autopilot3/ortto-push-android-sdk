@@ -5,6 +5,7 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.ortto.messaging.data.PushPermission;
 
 /**
  * Receives messages from Firebase
@@ -17,7 +18,6 @@ public class FirebaseMessageReceiver extends FirebaseMessagingService {
      */
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
-        Ortto.log().info("FirebaseMessageReceiver@onMessageReceived");
         boolean isReceived = onMessageReceived(this, remoteMessage);
 
         // If this is not an Ortto originated message, return false so another
@@ -65,7 +65,19 @@ public class FirebaseMessageReceiver extends FirebaseMessagingService {
      * @param token   The new FCM Token
      */
     public void onNewToken(Context context, @NonNull String token) {
-        Ortto.log().info("FirebaseMessageReceiver@onNewToken");
+
+        PushPermission permission = Ortto.instance().permission;
+
+        // If push permissions are denied, do not send the token
+        if (permission == PushPermission.Deny) {
+            return;
+        }
+
+        // If push permissions are automatic but the user has not granted it explicitly, do not send
+        if (permission == PushPermission.Automatic && !Ortto.instance().hasUserGrantedPushPermissions()) {
+            return;
+        }
+
         Ortto.instance().sendRegistrationToServer(token);
     }
 }

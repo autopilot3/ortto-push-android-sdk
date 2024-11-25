@@ -14,6 +14,8 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.util.concurrent.CompletableFuture;
+
 public class IdentityRepository {
 
     protected SharedPreferences sharedPreferences;
@@ -74,65 +76,63 @@ public class IdentityRepository {
     public void clearAll() {
         sharedPreferences.edit().clear().apply();
         this.setIdentifier(null);
-        Ortto.log().info("IdentityRepository@clearAll: identifier set to null");
-
+        Ortto.log().info("IdentityRepository@clearAll");
     }
 
-    public void sendIdentityToServer(UserID identity, String sessionId) {
-        Ortto.log().info("IdentityRepository@sendIdentityToServer");
+    public CompletableFuture<Void> sendIdentityToServer(UserID identity, String sessionId) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
 
         if (this.call != null && this.call.isExecuted()) {
             Ortto.log().warning("IdentityRepository.alreadyRequesting");
-
-            return;
+            future.complete(null);
+            return future;
         }
 
-        // Verify the user has been identified
         if (Ortto.instance().identity == null) {
             Ortto.log().warning("IdentityRepository.notIdentified");
-
-            return;
+            future.complete(null);
+            return future;
         }
 
-        // if identity is null, we should still be able to register
+        IdentityRegistration identityRegistration = new IdentityRegistration(
+                identity,
+                Ortto.instance().getConfig().appKey,
+                sessionId,
+                Ortto.instance().getConfig().shouldSkipNonExistingContacts
+        );
 
-         IdentityRegistration identityRegistration = new IdentityRegistration(
-                 identity,
-                 Ortto.instance().getConfig().appKey,
-                 sessionId,
-                 Ortto.instance().getConfig().shouldSkipNonExistingContacts
-         );
-
-        String json = (new Gson()).toJson(identityRegistration);
-        Ortto.log().info(json);
+        // json encode registration and log it
+        Ortto.log().info("IdentityRepository@sendIdentityToServer: "+(new Gson().toJson(identityRegistration)));
 
         this.call = Ortto.instance()
                 .client
                 .createIdentity(identityRegistration, Ortto.instance().getTrackingQuery());
 
         this.call.enqueue(new Callback<RegistrationResponse>() {
-             @Override
-             public void onResponse(Call<RegistrationResponse> call, Response<RegistrationResponse> response) {
-                 reset();
-                 Ortto.log().info("IdentityRepository@res.complete code="+response.code());
+            @Override
+            public void onResponse(Call<RegistrationResponse> call, Response<RegistrationResponse> response) {
+                reset();
+                if (!response.isSuccessful()) {
+                    future.completeExceptionally(new Exception("Request failed with code: " + response.code()));
+                    return;
+                }
 
-                 if (!response.isSuccessful()) {
-                     return;
-                 }
+                RegistrationResponse body = response.body();
+                if (body != null) {
+                    Ortto.instance().setSession(body.sessionId);
+                }
+                future.complete(null);
+            }
 
-                 RegistrationResponse body = response.body();
+            @Override
+            public void onFailure(Call<RegistrationResponse> call, Throwable t) {
+                reset();
+                Ortto.log().warning("res.fail code=" + t.getMessage());
+                future.completeExceptionally(t);
+            }
+        });
 
-                 if (body != null) {
-                     Ortto.instance().setSession(body.sessionId);
-                 }
-             }
-
-             @Override
-             public void onFailure(Call<RegistrationResponse> call, Throwable t) {
-                 reset();
-                 Ortto.log().warning("res.fail code="+t.getMessage());
-             }
-         });
+        return future;
     }
 
     protected void reset() {
