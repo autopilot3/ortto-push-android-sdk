@@ -67,6 +67,8 @@ public class Ortto {
 
     public String screenName = null;
 
+    private final RequestQueue requestQueue = new RequestQueue();
+
     public void init(OrttoConfig newConfig, @NonNull Application application, Logger logger) {
         setLogger(logger);
         init(newConfig, application);
@@ -90,7 +92,6 @@ public class Ortto {
         // Register activity lifecycle hooks
         application.registerActivityLifecycleCallbacks(new LifecycleListener());
 
-        //
         dispatchIdentifyRequest();
     }
 
@@ -179,12 +180,9 @@ public class Ortto {
      * @param token FCM Token
      */
     public void sendRegistrationToServer(String token) {
-        if (!config.allowAnonUsers && sessionId == null) {
-            // don't register if we haven't identified the user yet !
-            return;
+        if (sessionId != null) {
+            tokenRepository.sendToServer(token);
         }
-
-        tokenRepository.sendToServer(token);
     }
 
     /**
@@ -271,20 +269,23 @@ public class Ortto {
     }
 
     public void dispatchIdentifyRequest() {
-        identityRepository.sendIdentityToServer(this.identity, this.sessionId);
+        requestQueue.enqueue(() -> 
+            identityRepository.sendIdentityToServer(this.identity, this.sessionId)
+        );
     }
 
     public void dispatchPushRequest() {
-        getFirebaseToken()
-            .thenAcceptAsync(token -> {
-                if (token != null) {
-                    tokenRepository.sendToServer(token);
-                }
-            })
-            .exceptionally(throwable -> {
-                log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail message="+throwable.getMessage());
-                return null;
-            });
+        requestQueue.enqueue(() -> 
+            getFirebaseToken()
+                .thenCompose(token -> {
+                    if (token != null) {
+                        return tokenRepository.sendToServer(token)
+                            .thenApply(response -> null);
+                    }
+                    return CompletableFuture.completedFuture(null);
+                })
+                .thenApply(response -> null)
+        );
     }
 
     /**
