@@ -33,7 +33,13 @@ afterEvaluate {
 
                 // Two artifacts, the `aar` (or `jar`) and the sources
                 if (project.plugins.findPlugin("com.android.library")) {
-                    from components.release
+                    afterEvaluate {
+                        if (components.findByName("release") != null) {
+                            from components.release
+                        } else {
+                            throw new GradleException("Android release component not found. Ensure your `com.android.library` plugin is applied correctly.")
+                        }
+                    }
                 } else {
                     from components.java
                 }

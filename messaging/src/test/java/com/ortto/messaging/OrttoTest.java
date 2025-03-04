@@ -2,10 +2,13 @@ package com.ortto.messaging;
 
 import org.mockito.Mockito;
 import org.junit.Before;
+import org.robolectric.Robolectric;
+import org.robolectric.annotation.Config;
 
 import android.app.Application;
 import android.content.SharedPreferences;
 
+@Config(sdk = 33)
 abstract public class OrttoTest {
     protected Ortto ortto;
 

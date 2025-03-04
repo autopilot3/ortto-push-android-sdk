@@ -94,7 +94,7 @@ public class WidgetQueue {
         SharedPreferences.Editor editor = preferences.edit();
 
         editor.putString(ORTTO_WIDGET_QUEUE, queueJson);
-        editor.commit();
+        editor.apply();
 
         // update cache
         cache = items;

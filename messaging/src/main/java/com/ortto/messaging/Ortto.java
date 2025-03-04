@@ -250,7 +250,6 @@ public class Ortto {
                     if (task.isSuccessful()) {
                         firebaseTokenFuture.complete(task.getResult());
                     } else {
-                        log().warning("dispatchPushRequest@dispatchPushRequest firebase.getToken.fail!!");
                         firebaseTokenFuture.completeExceptionally(new Exception("Failed to get Firebase token"));
                     }
                 });

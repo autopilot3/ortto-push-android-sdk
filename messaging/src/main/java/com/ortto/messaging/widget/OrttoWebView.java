@@ -1,5 +1,6 @@
 package com.ortto.messaging.widget;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -49,6 +50,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+@SuppressLint("SetJavaScriptEnabled")
 class OrttoWebView extends FrameLayout {
     static final String tag = "OrttoWebView";
     static final String pageUrl = "https://appassets.androidplatform.net/assets/shared/webview/www/index.html";

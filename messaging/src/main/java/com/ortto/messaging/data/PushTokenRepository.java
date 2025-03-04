@@ -75,6 +75,7 @@ public class PushTokenRepository {
                 if (body != null) {
                     Ortto.instance().setSession(body.sessionId);
                 }
+
                 future.complete(body);
             }
 
