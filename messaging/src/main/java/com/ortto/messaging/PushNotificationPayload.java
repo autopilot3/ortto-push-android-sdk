@@ -15,7 +15,7 @@ public class PushNotificationPayload implements Parcelable {
     protected PushNotificationPayload(Parcel in) {
         deepLink = in.readString();
         id = in.readString();
-        extras = in.readBundle();
+        extras = in.readBundle(PushNotificationPayload.class.getClassLoader());
         title = in.readString();
         body = in.readString();
     }

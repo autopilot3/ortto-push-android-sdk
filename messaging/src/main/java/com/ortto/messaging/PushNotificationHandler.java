@@ -1,5 +1,6 @@
 package com.ortto.messaging;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
 import android.content.ComponentName;
@@ -19,6 +20,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.messaging.RemoteMessage;
 import com.google.gson.Gson;
@@ -204,7 +206,15 @@ public class PushNotificationHandler {
         }
 
         // Send notification
-        notificationManager.notify(messageID, notificationBuilder.build());
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) { // API 33
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                // Permission is granted, proceed with notification
+                notificationManager.notify(messageID, notificationBuilder.build());
+            }
+        } else {
+            // For API < 33, no runtime permission is needed
+            notificationManager.notify(messageID, notificationBuilder.build());
+        }
 
         return true;
     }
@@ -343,7 +353,12 @@ public class PushNotificationHandler {
         intent.putExtra("action_index", actionIndex);
 
         if (context.getApplicationInfo().targetSdkVersion > Build.VERSION_CODES.R) {
-            intent.setFlags(intentFlags | Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // API 30
+                intent.setFlags(intentFlags | Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER);
+            } else {
+                intent.setFlags(intentFlags);
+            }
+
             intent.putExtra("payload", payload);
             intent.putExtras(payload.extras);
 
