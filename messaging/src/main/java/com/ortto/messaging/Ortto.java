@@ -119,12 +119,9 @@ public class Ortto {
             clientBuilder.addNetworkInterceptor(logging);
         }
 
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .build();
-
         retrofit = new Retrofit.Builder()
                 .baseUrl(getConfig().endpoint)
-                .client(okHttpClient)
+                .client(clientBuilder.build())
                 .addConverterFactory(GsonConverterFactory.create())
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .build();
