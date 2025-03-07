@@ -294,7 +294,7 @@ public class PushNotificationHandler {
         }
 
         NotificationCompat.BigPictureStyle style = new NotificationCompat.BigPictureStyle()
-                .bigLargeIcon(null)
+                .bigLargeIcon((Bitmap) null)
                 .setSummaryText("Summary");
 
         URL url;

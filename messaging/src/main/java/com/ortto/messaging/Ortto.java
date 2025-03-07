@@ -15,8 +15,6 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.ortto.messaging.data.LinkUtm;
 import com.ortto.messaging.data.IdentityRepository;
@@ -28,6 +26,7 @@ import com.ortto.messaging.retrofit.TrackingClickedResponse;
 import com.ortto.messaging.widget.CaptureConfig;
 import com.ortto.messaging.widget.OrttoCapture;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,12 +35,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import retrofit2.Call;
 import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
+
+import okhttp3.logging.HttpLoggingInterceptor;
 
 /**
  * Ortto Controller class
@@ -82,8 +86,45 @@ public class Ortto {
         sessionId = identityRepository.sessionId;
         identity = identityRepository.identifier;
         permission = identityRepository.permission;
+
+        String userAgent = String.format(
+                "OrttoSDK/%s (%s %s; %s; %s)",
+                getSdkVersion(),                        // SDK Version
+                "Android",                              // OS Name
+                android.os.Build.VERSION.RELEASE,       // OS Version
+                Build.MODEL,                            // Device Name
+                appContext.getPackageName()             // App Name
+        );
+
+        Interceptor headerInterceptor = new Interceptor() {
+            @Override
+            public Response intercept(Chain chain) throws IOException {
+                Request original = chain.request();
+                Request modified = original.newBuilder()
+                        .header("User-Agent", userAgent)
+                        .build();
+
+                return chain.proceed(modified);
+            }
+        };
+
+
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
+                .addInterceptor(headerInterceptor);
+
+        // Logging interceptor
+        if (config.debug) {
+            HttpLoggingInterceptor logging = new HttpLoggingInterceptor(message -> Ortto.log().info("HTTP: " + message));
+            logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+            clientBuilder.addNetworkInterceptor(logging);
+        }
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .build();
+
         retrofit = new Retrofit.Builder()
                 .baseUrl(getConfig().endpoint)
+                .client(okHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .build();
@@ -314,7 +355,6 @@ public class Ortto {
         return query;
     }
 
-
     /**
      * Retrieve the name of the Android application running the Ortto SDK
      *
@@ -379,8 +419,18 @@ public class Ortto {
 
         call.enqueue(new Callback<TrackingClickedResponse>() {
             @Override
-            public void onResponse(@NonNull Call<TrackingClickedResponse> call, @NonNull Response<TrackingClickedResponse> response) {
-                Ortto.log().info("Ortto@trackLinkClick.req.complete code="+response.code());
+            public void onResponse(Call<TrackingClickedResponse> call, retrofit2.Response<TrackingClickedResponse> response) {
+                String bodyString = null;
+                if (!response.isSuccessful() && response.errorBody() != null) {
+                    try {
+                        bodyString = response.errorBody().string();
+                    } catch (IOException e) {
+                        Ortto.log().warning("Ortto@trackLinkClick.errorBody.fail msg=" + e.getMessage());
+                    }
+                } else if (response.body() != null) {
+                    bodyString = response.body().toString();
+                }
+                Ortto.log().info("Ortto@trackLinkClick.req.complete code=" + response.code() + " body=" + bodyString);
                 if (listener != null) {
                     listener.onComplete(utm);
                 }
@@ -388,7 +438,7 @@ public class Ortto {
 
             @Override
             public void onFailure(Call<TrackingClickedResponse> call, Throwable t) {
-                Ortto.log().warning("Ortto@trackLinkClick.req.fail msg="+t.getMessage());
+                Ortto.log().warning("Ortto@trackLinkClick.req.fail msg=" + t.getMessage());
             }
         });
     }
