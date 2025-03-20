@@ -325,6 +325,15 @@ public class Ortto {
         );
     }
 
+    public interface OnTokenRegisteredListener {
+        void onComplete();
+    }
+
+    public void registerDeviceToken(String token, OnTokenRegisteredListener listener) {
+        tokenRepository.sendToServer(token)
+            .thenAccept(response -> listener.onComplete());
+    }
+
     /**
      * Set the current session created by the Ortto tracking API
      *
