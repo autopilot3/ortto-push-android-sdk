@@ -204,6 +204,10 @@ public class Ortto {
      * @return bool
      */
     public boolean hasUserGrantedPushPermissions() {
+        if (appContext == null || appContext.getApplicationContext() == null) {
+            return false;
+        }
+
         NotificationManager manager = (NotificationManager) appContext.getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (!manager.areNotificationsEnabled()) {
