@@ -298,20 +298,52 @@ public class Ortto {
         return firebaseTokenFuture;
     }
 
+    public interface OnTokenRegisteredListener {
+        void onComplete();
+    }
+
+    public interface OnIdentifyListener {
+        void onComplete();
+        void onError(Throwable error);
+    }
+
     /**
      * Set the current user
      * @param identifier User Identity to associate with the session
      */
     public void identify(UserID identifier) {
+        identify(identifier, null);
+    }
+
+    /**
+     * Set the current user with completion callback
+     * @param identifier User Identity to associate with the session
+     * @param listener Optional callback for completion status
+     */
+    public void identify(UserID identifier, OnIdentifyListener listener) {
         this.identity = identifier;
         identityRepository.setIdentifier(identifier);
-
-        dispatchIdentifyRequest();
+        dispatchIdentifyRequest(listener);
     }
 
     public void dispatchIdentifyRequest() {
+        dispatchIdentifyRequest(null);
+    }
+
+    public void dispatchIdentifyRequest(OnIdentifyListener listener) {
         requestQueue.enqueue(() -> 
             identityRepository.sendIdentityToServer(this.identity, this.sessionId)
+                .thenAccept(v -> {
+                    if (listener != null) {
+                        listener.onComplete();
+                    }
+                })
+                .exceptionally(error -> {
+                    if (listener != null) {
+                        listener.onError(error);
+                    }
+                    return null;
+                })
         );
     }
 
@@ -327,10 +359,6 @@ public class Ortto {
                 })
                 .thenApply(response -> null)
         );
-    }
-
-    public interface OnTokenRegisteredListener {
-        void onComplete();
     }
 
     public void registerDeviceToken(String token, OnTokenRegisteredListener listener) {
