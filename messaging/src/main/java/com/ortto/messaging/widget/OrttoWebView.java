@@ -177,7 +177,7 @@ class OrttoWebView extends FrameLayout {
         this.addView(webView);
     }
 
-    public void showWidget(String id) {
+    public void showWidget(String id, Ortto.WidgetCallback callback) {
         Call<WidgetsGetResponse> widgets = Ortto.instance().client.getWidgets(createWidgetsGetRequest());
 
         FrameLayout frameLayout = this;
@@ -193,12 +193,7 @@ class OrttoWebView extends FrameLayout {
                     }
 
                     if (newBody.widgets.size() == 0) {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Ortto.instance().capture.processNextWidgetFromQueue();
-                            }
-                        });
+                        new Handler(Looper.getMainLooper()).post(() -> Ortto.instance().capture.processNextWidgetFromQueue());
 
                         return;
                     }
@@ -219,7 +214,10 @@ class OrttoWebView extends FrameLayout {
                         @Override
                         public void onPageFinished(WebView view, String url) {
                             super.onPageFinished(view, url);
-                            webView.evaluateJavascript(injectPageData, null);
+                            webView.evaluateJavascript(injectPageData, (value) -> {
+                                Log.d(tag, "evaluateJavascript: " + value);
+                            });
+                            callback.onSuccess();
                         }
                     };
                     webView.setWebViewClient(webViewClient);
@@ -227,12 +225,14 @@ class OrttoWebView extends FrameLayout {
                 } catch (Exception e) {
                     // do nothing
                     Log.e(tag, "Error", e);
+                    if (callback != null) callback.onFailure(e);
                 }
             }
 
             @Override
             public void onFailure(Call<WidgetsGetResponse> call, Throwable t) {
                 Log.e(tag, "Error", t);
+                if (callback != null) callback.onFailure(t);
             }
         });
     }

@@ -87,14 +87,14 @@ public class OrttoCapture implements AutoCloseable {
             @Override
             public void run() {
                 Optional<QueuedWidget> widget = widgetQueue.dequeue();
-                widget.ifPresent(queuedWidget -> showWidget(queuedWidget.id));
+                widget.ifPresent(queuedWidget -> showWidget(queuedWidget.id, null));
             }
         }, 3000);
     }
 
-    public void showWidget(String id) {
+    public void showWidget(String id, Ortto.WidgetCallback callback) {
         widgetQueue.remove(id);
-        webView.showWidget(id);
+        webView.showWidget(id, callback);
     }
 
     @Override
