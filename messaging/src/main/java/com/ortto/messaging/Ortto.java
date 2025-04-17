@@ -278,10 +278,34 @@ public class Ortto {
     }
 
     public void clearIdentity(Consumer<RegistrationResponse> callback) {
-        CompletableFuture.runAsync(identityRepository::clearAll)
-                .thenComposeAsync(v -> getFirebaseToken())
-                .thenComposeAsync(tokenRepository::unsubscribe)
-                .thenAccept(callback);
+        clearIdentity(new ClearIdentityCallback() {
+            @Override
+            public void onSuccess(RegistrationResponse response) {
+                callback.accept(response);
+            }
+
+            @Override
+            public void onFailure(Throwable error) {
+                log().warning(error.getMessage());
+            }
+        });
+    }
+
+    public interface ClearIdentityCallback {
+        void onSuccess(RegistrationResponse response);
+        void onFailure(Throwable error);
+    }
+
+    public void clearIdentity(ClearIdentityCallback callback) {
+        CompletableFuture
+            .runAsync(identityRepository::clearAll)
+            .thenComposeAsync(v -> getFirebaseToken())
+            .thenComposeAsync(tokenRepository::unsubscribe)
+            .thenAccept(callback::onSuccess)
+            .exceptionally(ex -> {
+                callback.onFailure(ex);
+                return null;
+            });
     }
 
     public CompletableFuture<String> getFirebaseToken() {
@@ -485,12 +509,22 @@ public class Ortto {
         void onComplete(LinkUtm utm);
     }
 
-    public void showWidget(String id) throws OrttoCaptureInitException {
+    public interface WidgetCallback {
+        void onSuccess();
+        void onFailure(Throwable t);
+    }
+
+    public void showWidget(String id) {
+        showWidget(id, null);
+    }
+
+    public void showWidget(String id, WidgetCallback callback) {
         if (capture == null) {
-            throw new OrttoCaptureInitException();
+            if (callback != null) callback.onFailure(new OrttoCaptureInitException());
+            return;
         }
 
-        capture.showWidget(id);
+        capture.showWidget(id, callback);
     }
 
     public void queueWidget(String id) throws OrttoCaptureInitException {
