@@ -24,6 +24,8 @@
 # This ensures Gson can correctly serialize/deserialize based on field names or @SerializedName annotations
 -keep class com.ortto.messaging.identity.** { *; }
 -keep class com.ortto.messaging.retrofit.** { *; }
+-keep class com.ortto.messaging.ActionItem { *; }
+-keep class com.ortto.messaging.data.LinkUtm { *; }
 -keep class com.ortto.messaging.widget.QueuedWidget { *; } # Keep specifically for SharedPreferences/Gson
 
 # Keep JavaScript Interface class and methods
