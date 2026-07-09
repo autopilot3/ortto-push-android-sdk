@@ -73,6 +73,19 @@ public class PushNotificationHandler {
      * @return If Ortto SDK has processed the notification
      */
     public boolean handleMessage(Context context) {
+        return handleMessage(context, true);
+    }
+
+    /**
+     * Process this object's remote message, optionally posting a visible notification.
+     * Delivery tracking still runs when displayNotification is false so callers can avoid
+     * duplicate notifications for payloads already displayed by the operating system.
+     *
+     * @param context Application context
+     * @param displayNotification whether the SDK should post a visible notification
+     * @return If Ortto SDK has processed the notification
+     */
+    public boolean handleMessage(Context context, boolean displayNotification) {
         Ortto.log().info("PushNotificationHandler@handleMessage."+remoteMessage.getMessageId());
 
         Map<String, String> data = remoteMessage.getData();
@@ -85,6 +98,10 @@ public class PushNotificationHandler {
 
         if (data.containsKey(KEY_TRACKING_URL)) {
             trackNotificationDelivery(data.get(KEY_TRACKING_URL));
+        }
+
+        if (!displayNotification) {
+            return true;
         }
 
         // Extract out notification action list
@@ -219,7 +236,7 @@ public class PushNotificationHandler {
         return true;
     }
 
-    private void trackNotificationDelivery(String url) {
+    protected void trackNotificationDelivery(String url) {
         if (url == null || url.isEmpty()) {
             return;
         }
