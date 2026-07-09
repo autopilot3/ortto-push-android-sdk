@@ -15,9 +15,11 @@ public class RequestQueue {
     public void enqueue(Supplier<CompletableFuture<Void>> job) {
         synchronized (lock) {
             queue.offer(job);
+            Ortto.log().info("RequestQueue: Job enqueued. Queue size: " + queue.size());
             
             if (!isProcessing) {
                 isProcessing = true;
+                Ortto.log().info("RequestQueue: Starting processing queue.");
                 processNext();
             }
         }
@@ -27,12 +29,14 @@ public class RequestQueue {
         if (queue.isEmpty()) {
             synchronized (lock) {
                 isProcessing = false;
+                Ortto.log().info("RequestQueue: Queue is empty. Stopping processing.");
             }
             return;
         }
 
-        int currentJob = jobCounter;
+        int currentJob = jobCounter++;
         Supplier<CompletableFuture<Void>> job = queue.poll();
+        Ortto.log().info("RequestQueue: Starting job #" + currentJob + ". Remaining queue size: " + queue.size());
         
         try {
             CompletableFuture<Void> future = job.get();
@@ -40,13 +44,16 @@ public class RequestQueue {
             future.whenComplete((result, error) -> {
                 synchronized (lock) {
                     if (error != null) {
-                        Log.e("ortto@q", String.format("Job #%d: Failed with error: %s", currentJob, error.getMessage()));
+                        Ortto.log().warning(String.format("RequestQueue: Job #%d failed with error: %s", currentJob, error.getMessage()));
+                    } else {
+                        Ortto.log().info("RequestQueue: Job #" + currentJob + " completed successfully.");
                     }
                     processNext();
                 }
             });
         } catch (Exception e) {
             synchronized (lock) {
+                Ortto.log().warning(String.format("RequestQueue: Exception in job #%d: %s", currentJob, e.getMessage()));
                 processNext();
             }
         }
@@ -56,6 +63,7 @@ public class RequestQueue {
         synchronized (lock) {
             queue.clear();
             isProcessing = false;
+            Ortto.log().info("RequestQueue: Queue cleared.");
         }
     }
 } 

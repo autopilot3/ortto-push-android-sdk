@@ -334,45 +334,60 @@ public class Ortto {
     /**
      * Set the current user
      * @param identifier User Identity to associate with the session
+     * @return CompletableFuture<Void> that completes when the request is done
      */
-    public void identify(UserID identifier) {
-        identify(identifier, null);
+    public CompletableFuture<Void> identify(UserID identifier) {
+        return identify(identifier, null);
     }
 
     /**
      * Set the current user with completion callback
      * @param identifier User Identity to associate with the session
      * @param listener Optional callback for completion status
+     * @return CompletableFuture<Void> that completes when the request is done
      */
-    public void identify(UserID identifier, OnIdentifyListener listener) {
+    public CompletableFuture<Void> identify(UserID identifier, OnIdentifyListener listener) {
         this.identity = identifier;
         identityRepository.setIdentifier(identifier);
-        dispatchIdentifyRequest(listener);
+        return dispatchIdentifyRequest(listener);
     }
 
-    public void dispatchIdentifyRequest() {
-        dispatchIdentifyRequest(null);
+    /**
+     * Dispatch identify request, enqueued and returns a CompletableFuture
+     * @return CompletableFuture<Void> that completes when the request is done
+     */
+    public CompletableFuture<Void> dispatchIdentifyRequest() {
+        return dispatchIdentifyRequest(null);
     }
 
-    public void dispatchIdentifyRequest(OnIdentifyListener listener) {
-        requestQueue.enqueue(() -> 
+    public CompletableFuture<Void> dispatchIdentifyRequest(OnIdentifyListener listener) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        requestQueue.enqueue(() ->
             identityRepository.sendIdentityToServer(this.identity, this.sessionId)
                 .thenAccept(v -> {
                     if (listener != null) {
                         listener.onComplete();
                     }
+                    future.complete(null);
                 })
                 .exceptionally(error -> {
                     if (listener != null) {
                         listener.onError(error);
                     }
+                    future.completeExceptionally(error);
                     return null;
                 })
         );
+        return future;
     }
 
-    public void dispatchPushRequest() {
-        requestQueue.enqueue(() -> 
+    /**
+     * Dispatch push request, enqueued and returns a CompletableFuture
+     * @return CompletableFuture<Void> that completes when the request is done
+     */
+    public CompletableFuture<Void> dispatchPushRequest() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        requestQueue.enqueue(() ->
             getFirebaseToken()
                 .thenCompose(token -> {
                     if (token != null) {
@@ -381,13 +396,42 @@ public class Ortto {
                     }
                     return CompletableFuture.completedFuture(null);
                 })
-                .thenApply(response -> null)
+                .thenAccept(v -> future.complete(null))
+                .exceptionally(error -> {
+                    future.completeExceptionally(error);
+                    return null;
+                })
         );
+        return future;
     }
 
+    /**
+     * Register device token, enqueued and returns a CompletableFuture
+     * @param token FCM Token
+     * @return CompletableFuture<Void> that completes when the request is done
+     */
+    public CompletableFuture<Void> registerDeviceToken(String token) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        requestQueue.enqueue(() ->
+            tokenRepository.sendToServer(token)
+                .thenAccept(response -> future.complete(null))
+                .exceptionally(error -> {
+                    future.completeExceptionally(error);
+                    return null;
+                })
+        );
+        return future;
+    }
+
+    // Backward-compatible listener-based API for registerDeviceToken
     public void registerDeviceToken(String token, OnTokenRegisteredListener listener) {
-        tokenRepository.sendToServer(token)
-            .thenAccept(response -> listener.onComplete());
+        registerDeviceToken(token)
+            .thenAccept(v -> listener.onComplete())
+            .exceptionally(error -> {
+                // No onError in listener, just log
+                Ortto.log().warning("registerDeviceToken failed: " + error.getMessage());
+                return null;
+            });
     }
 
     /**
