@@ -23,9 +23,9 @@ afterEvaluate {
             release(MavenPublication) {
                 // The coordinates of the library, being set from variables that
                 // we'll set up later
-                groupId PUBLISH_GROUP_ID
-                artifactId PUBLISH_ARTIFACT_ID
-                version PUBLISH_VERSION
+                groupId = PUBLISH_GROUP_ID
+                artifactId = PUBLISH_ARTIFACT_ID
+                version = PUBLISH_VERSION
 
                 // Two artifacts, the `aar` (or `jar`) and the sources
                 if (project.plugins.findPlugin("com.android.library")) {
@@ -77,11 +77,14 @@ afterEvaluate {
     }
 }
 
-signing {
-    useInMemoryPgpKeys(
-            rootProject.ext["signing.keyId"],
-            rootProject.ext["signing.key"],
-            rootProject.ext["signing.password"],
-    )
-    sign publishing.publications
+def signingKey = rootProject.ext["signing.key"]
+if (signingKey != null && !signingKey.isEmpty()) {
+    signing {
+        useInMemoryPgpKeys(
+                rootProject.ext["signing.keyId"],
+                signingKey,
+                rootProject.ext["signing.password"],
+        )
+        sign publishing.publications
+    }
 }
