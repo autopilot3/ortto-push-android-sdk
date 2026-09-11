@@ -1,0 +1,105 @@
+import java.util.Properties
+
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}
+
+def localConfig = new Properties()
+def localConfigFile = file('local.properties')
+if (localConfigFile.exists()) {
+    localConfigFile.withInputStream { localConfig.load(it) }
+}
+
+def configValue = { String propertyName, String environmentName ->
+    def environmentValue = System.getenv(environmentName)
+    return environmentValue != null && !environmentValue.trim().isEmpty()
+        ? environmentValue.trim()
+        : localConfig.getProperty(propertyName, '').trim()
+}
+
+def javaLiteral = { String value ->
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+}
+
+android {
+    namespace = 'com.ortto.demo'
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = 'com.ortto.demo'
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = '1.0'
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+
+        buildConfigField 'String', 'ORTTO_APP_KEY', javaLiteral(configValue('ortto.appKey', 'ORTTO_APP_KEY'))
+        buildConfigField 'String', 'ORTTO_API_ENDPOINT', javaLiteral(configValue('ortto.apiEndpoint', 'ORTTO_API_ENDPOINT'))
+        buildConfigField 'String', 'ORTTO_CAPTURE_DATA_SOURCE_KEY', javaLiteral(configValue('ortto.captureDataSourceKey', 'ORTTO_CAPTURE_DATA_SOURCE_KEY'))
+        buildConfigField 'String', 'ORTTO_CAPTURE_JS_URL', javaLiteral(configValue('ortto.captureJsUrl', 'ORTTO_CAPTURE_JS_URL'))
+        buildConfigField 'String', 'DEEP_LINK_SCHEME', '"ortto-demo-android"'
+        buildConfigField 'boolean', 'HAS_GOOGLE_SERVICES', file('google-services.json').exists().toString()
+        manifestPlaceholders = [orttoDeepLinkScheme: 'ortto-demo-android']
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = '1.5.10'
+    }
+
+    buildFeatures {
+        buildConfig = true
+        compose = true
+    }
+
+    packaging {
+        resources.excludes += '/META-INF/{AL2.0,LGPL2.1}'
+    }
+}
+
+dependencies {
+    implementation project(':messaging')
+
+    // Keep demo dependency maintenance separate from SDK dependency updates.
+    // These versions support the Gradle/AGP/API baseline on the master branch.
+    implementation platform('androidx.compose:compose-bom:2024.02.02')
+    androidTestImplementation platform('androidx.compose:compose-bom:2024.02.02')
+
+    implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+
+    implementation platform('com.google.firebase:firebase-bom:31.0.2')
+    implementation 'com.google.firebase:firebase-messaging'
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+}

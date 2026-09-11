@@ -50,3 +50,9 @@ dependencies {
     implementation "com.ortto:androidsdk:<version>"
 }
 ```
+
+## Demo application
+
+The in-repository [`demo`](demo/) module is a complete Material 3 reference app for the SDK candidate in this checkout. It covers identity, Android notification permission, FCM token registration and redispatch, real notification delivery and tap routing, tracked links, per-tab screen events, optional in-app widgets, and sanitized diagnostics.
+
+See [`demo/README.md`](demo/README.md) for configuration, automated tests, and the end-to-end validation flow. Real Ortto and Firebase configuration files stay local and are gitignored.
