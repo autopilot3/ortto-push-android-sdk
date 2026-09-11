@@ -30,18 +30,19 @@ Ortto.instance().initCapture(new CaptureConfig(
 
 ## Publishing
 
-Read this gist by the folks at stream.io https://gist.github.com/zsmb13/56ed98c8fe916de441f2a9d8e060cd4a
+Releases use the Central Portal OSSRH Staging API compatibility service. The
+`OSSRH_USERNAME` and `OSSRH_PASSWORD` values must contain a Central Portal User
+Token, not a legacy OSSRH token. GPG signing values are also required for a
+Central release.
 
-Gradle documentation: https://docs.gradle.org/current/userguide/build_environment.html 
+1. Set the release version through `VERSION_NAME`, for example `VERSION_NAME=1.8.9`.
+2. Run `./gradlew clean test lint assembleRelease`.
+3. Run `./gradlew publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository`.
+4. Verify the deployment in the [Central Publisher Portal](https://central.sonatype.com/publishing) and then in [Maven Central](https://repo1.maven.org/maven2/com/ortto/androidsdk/).
 
-GPG information https://github.com/sbt/sbt-ci-release#gpg 
-
-Will publish to this folder https://repo1.maven.org/maven2/com/ortto/androidsdk/
-
-Log into Nexus Repository Manager https://s01.oss.sonatype.org/#welcome 
-
-1. Update messaging module build.gradle `PUBLISH_VERSION` with latest version number you wish to be published
-2. Run ` ./gradlew publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository`
+For a credential-free local consumer test, run
+`VERSION_NAME=1.8.9 ./gradlew publishReleasePublicationToMavenLocal` and resolve
+`com.ortto:androidsdk:1.8.9` from `mavenLocal()` in a separate application.
 
 ## Using
 
