@@ -1,0 +1,23 @@
+{
+  "project_info": {
+    "project_number": "REPLACE_WITH_FIREBASE_SENDER_ID",
+    "project_id": "replace-with-firebase-project-id",
+    "storage_bucket": "replace-with-firebase-project-id.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "REPLACE_WITH_ANDROID_FIREBASE_APP_ID",
+        "android_client_info": {
+          "package_name": "com.ortto.demo"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "REPLACE_WITH_FIREBASE_API_KEY"
+        }
+      ]
+    }
+  ],
+  "configuration_version": "1"
+}
