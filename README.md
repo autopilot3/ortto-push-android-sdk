@@ -30,19 +30,18 @@ Ortto.instance().initCapture(new CaptureConfig(
 
 ## Publishing
 
-Releases use the Central Portal OSSRH Staging API compatibility service. The
-`OSSRH_USERNAME` and `OSSRH_PASSWORD` values must contain a Central Portal User
-Token, not a legacy OSSRH token. GPG signing values are also required for a
-Central release.
+Releases are verified locally, then uploaded to the Central Portal as a closed,
+user-managed staging deployment. Staging never publishes automatically.
 
-1. Set the release version through `VERSION_NAME`, for example `VERSION_NAME=1.8.9`.
-2. Run `./gradlew clean test lint assembleRelease`.
-3. Run `./gradlew publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository`.
-4. Verify the deployment in the [Central Publisher Portal](https://central.sonatype.com/publishing) and then in [Maven Central](https://repo1.maven.org/maven2/com/ortto/androidsdk/).
-
-For a credential-free local consumer test, run
-`VERSION_NAME=1.8.9 ./gradlew publishReleasePublicationToMavenLocal` and resolve
-`com.ortto:androidsdk:1.8.9` from `mavenLocal()` in a separate application.
+1. Run `./scripts/release-local.sh verify v1.8.10`.
+2. Merge the reviewed release commit and create its signed version tag.
+3. Export a Central Portal user token as `OSSRH_USERNAME` and `OSSRH_PASSWORD`,
+   plus `SIGNING_KEY`, `SIGNING_KEY_ID`, and `SIGNING_PASSWORD`.
+4. From the exact clean tag, run `./scripts/release-local.sh stage v1.8.10`.
+5. Inspect Central validation and either drop the deployment or publish it from
+   the Portal after explicit approval.
+6. Wait for Maven Central, build a clean public consumer, then create the GitHub
+   release.
 
 ## Using
 

@@ -1,4 +1,4 @@
-name: Release Ortto Android-SDK
+name: Stage Ortto Android SDK
 
 on:
   push:
@@ -16,24 +16,19 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
+      contents: read
 
     concurrency:
       group: ${{ github.ref }}
 
-    strategy:
-      matrix:
-        include:
-          - environment: PROD
-            command: "publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository"
-
     environment:
-      name: ${{ matrix.environment }}
+      name: PROD
 
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.version || github.ref }}
+          fetch-depth: 0
 
       - name: Extract Version Tag
         env:
@@ -60,13 +55,13 @@ jobs:
 
       - uses: android-actions/setup-android@v4
 
-      - name: Run Tests
-        run: ./gradlew test
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Bundle
+      - name: Verify release locally
+        run: ./scripts/release-local.sh verify "${VERSION_NAME}"
+
+      - name: Upload and close staging deployment
         env:
           VERSION_NAME: ${{ env.VERSION_NAME }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -74,10 +69,4 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-        run:
-          ./gradlew ${{ matrix.command }}
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "${VERSION_NAME}" --verify-tag --title "Release ${VERSION_NAME}"
+        run: ./scripts/release-local.sh stage "${VERSION_NAME}"

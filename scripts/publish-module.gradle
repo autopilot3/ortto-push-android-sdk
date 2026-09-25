@@ -1,17 +1,30 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-tasks.register('androidSourcesJar', Jar) {
-    archiveClassifier.set('sources')
-    if (project.plugins.findPlugin("com.android.library")) {
-        // For Android libraries
-        from android.sourceSets.main.java.srcDirs
-        from android.sourceSets.main.kotlin.srcDirs
-    } else {
-        // For pure Kotlin libraries, in case you have them
-        from sourceSets.main.java.srcDirs
-        from sourceSets.main.kotlin.srcDirs
+def androidJavadocs = tasks.register('androidJavadocs', Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath = files(android.bootClasspath)
+    destinationDir = layout.buildDirectory.dir('docs/javadoc').get().asFile
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
+    options.docEncoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+android.libraryVariants.configureEach { variant ->
+    if (variant.name == 'release') {
+        androidJavadocs.configure {
+            dependsOn variant.javaCompileProvider
+            classpath += variant.javaCompileProvider.get().classpath
+            classpath += files(variant.javaCompileProvider.get().destinationDirectory)
+        }
     }
+}
+
+def androidJavadocsJar = tasks.register('androidJavadocsJar', Jar) {
+    dependsOn androidJavadocs
+    archiveClassifier.set('javadoc')
+    from androidJavadocs.map { it.destinationDir }
 }
 
 group = PUBLISH_GROUP_ID
@@ -39,16 +52,16 @@ afterEvaluate {
                 } else {
                     from components.java
                 }
+                artifact androidJavadocsJar
 
-                // Mostly self-explanatory metadata
                 pom {
                     name = PUBLISH_ARTIFACT_ID
                     description = 'Ortto Android SDK'
-                    url = 'https://github.com/autopilot3/ap3-push-android-sdk'
+                    url = 'https://github.com/autopilot3/ortto-push-android-sdk'
                     licenses {
                         license {
                             name = 'MIT'
-                            url = 'https://github.com/autopilot3/ap3-push-android-sdk/blob/master/LICENSE'
+                            url = 'https://github.com/autopilot3/ortto-push-android-sdk/blob/master/LICENSE'
                         }
                     }
                     developers {
@@ -64,12 +77,10 @@ afterEvaluate {
                         }
                     }
 
-                    // Version control info - if you're using GitHub, follow the
-                    // format as seen here
                     scm {
-                        url = "https://github.com/autopilot3/ap3-push-android-sdk"
-                        connection = "scm:git@github.com:autopilot3/ap3-push-android-sdk.git"
-                        developerConnection = "scm:git@github.com:autopilot3/ap3-push-android-sdk.git"
+                        url = 'https://github.com/autopilot3/ortto-push-android-sdk'
+                        connection = 'scm:git:https://github.com/autopilot3/ortto-push-android-sdk.git'
+                        developerConnection = 'scm:git:ssh://git@github.com/autopilot3/ortto-push-android-sdk.git'
                     }
                 }
             }
