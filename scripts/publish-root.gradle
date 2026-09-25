@@ -1,33 +1,43 @@
 apply plugin: 'io.github.gradle-nexus.publish-plugin'
 
-// Create variables with empty default values
-ext["ossrhUsername"] = ''
-ext["ossrhPassword"] = ''
-ext["signing.keyId"] = ''
-ext["signing.password"] = ''
-ext["signing.key"] = ''
+ext["ossrhUsername"] = System.getenv('OSSRH_USERNAME')
+ext["ossrhPassword"] = System.getenv('OSSRH_PASSWORD')
+ext["signing.keyId"] = System.getenv('SIGNING_KEY_ID')
+ext["signing.password"] = System.getenv('SIGNING_PASSWORD')
+ext["signing.key"] = System.getenv('SIGNING_KEY')
 
-File secretPropsFile = project.rootProject.file('local.properties')
-if (secretPropsFile.exists()) {
-    // Read local.properties file first if it exists
-    Properties p = new Properties()
-    new FileInputStream(secretPropsFile).withCloseable { is -> p.load(is) }
-    p.each { name, value -> ext[name] = value }
-
-    println "Using local.properties for signing and Sonatype credentials"
-} else {
-    // Use system environment variables
-    ext["ossrhUsername"] = System.getenv('OSSRH_USERNAME')
-    ext["ossrhPassword"] = System.getenv('OSSRH_PASSWORD')
-    ext["signing.keyId"] = System.getenv('SIGNING_KEY_ID')
-    ext["signing.password"] = System.getenv('SIGNING_PASSWORD')
-    ext["signing.key"] = System.getenv('SIGNING_KEY')
-
-    println "Using environment variables for signing and Sonatype credentials"
+def centralTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    def normalizedTaskName = taskName.toLowerCase()
+    normalizedTaskName.contains('sonatype') ||
+            normalizedTaskName.contains('stagingrepositor') ||
+            normalizedTaskName == 'closestagingrepositories' ||
+            normalizedTaskName == 'releasestagingrepositories'
 }
 
-// The OSSRH-named credentials must contain a Central Portal User Token.
+if (centralTaskRequested) {
+    def requestedVersion = System.getenv('VERSION_NAME')
+    if (requestedVersion == null || !(requestedVersion ==~ /^v\d+\.\d+\.\d+$/)) {
+        throw new GradleException('Central staging requires VERSION_NAME in vMAJOR.MINOR.PATCH form')
+    }
+
+    def requiredEnvironment = [
+            'OSSRH_USERNAME' : ossrhUsername,
+            'OSSRH_PASSWORD' : ossrhPassword,
+            'SIGNING_KEY'    : rootProject.ext['signing.key'],
+            'SIGNING_KEY_ID' : rootProject.ext['signing.keyId'],
+            'SIGNING_PASSWORD': rootProject.ext['signing.password'],
+    ]
+    def missingEnvironment = requiredEnvironment.findAll { name, value ->
+        value == null || value.toString().trim().isEmpty()
+    }.keySet()
+    if (!missingEnvironment.isEmpty()) {
+        throw new GradleException("Central staging credentials are incomplete: ${missingEnvironment.join(', ')}")
+    }
+}
+
 nexusPublishing {
+    packageGroup.set('com.ortto')
+    repositoryDescription.set("com.ortto:androidsdk:${rootProject.ext.releaseVersion}")
     repositories {
         sonatype {
             username = ossrhUsername
