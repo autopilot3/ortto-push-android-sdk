@@ -1,0 +1,5 @@
+# Copy to demo/local.properties. The real file is gitignored.
+ortto.apiEndpoint=https://capture-api-au.ortto.app/
+ortto.appKey=
+ortto.captureDataSourceKey=
+ortto.captureJsUrl=
