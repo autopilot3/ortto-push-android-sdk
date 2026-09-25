@@ -20,6 +20,8 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import android.content.SharedPreferences;
+
 /**
  * Repository class to handle push notification tokens.
  */
@@ -28,6 +30,9 @@ public class PushTokenRepository {
     protected Context context;
 
     protected Call<RegistrationResponse> call;
+
+    private static final String PREFS_NAME = "com.ortto.messaging.prefs";
+    private static final String KEY_PUSH_TOKEN = "push_token";
 
     public PushTokenRepository(Context context) {
         this.context = context;
@@ -40,6 +45,13 @@ public class PushTokenRepository {
     public CompletableFuture<RegistrationResponse> sendToServer(String token) {
         CompletableFuture<RegistrationResponse> future = new CompletableFuture<>();
         
+        String lastToken = getStoredToken();
+        if (token != null && token.equals(lastToken)) {
+            Ortto.log().info("PushTokenRepository@sendToServer: Token unchanged, skipping send.");
+            future.complete(null);
+            return future;
+        }
+
         if (this.call != null && this.call.isExecuted()) {
             Ortto.log().warning("PushTokenRepository@sendToServer.alreadyRequesting");
             future.complete(null);
@@ -75,7 +87,7 @@ public class PushTokenRepository {
                 if (body != null) {
                     Ortto.instance().setSession(body.sessionId);
                 }
-
+                setStoredToken(token);
                 future.complete(body);
             }
 
@@ -138,6 +150,7 @@ public class PushTokenRepository {
                 }
 
                 Ortto.instance().setSession(null);
+                setStoredToken(null);
 
                 future.complete(response.body());
             }
@@ -152,5 +165,17 @@ public class PushTokenRepository {
         });
 
         return future;
+    }
+
+    private SharedPreferences getPrefs() {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    private String getStoredToken() {
+        return getPrefs().getString(KEY_PUSH_TOKEN, null);
+    }
+
+    private void setStoredToken(String token) {
+        getPrefs().edit().putString(KEY_PUSH_TOKEN, token).apply();
     }
 }
